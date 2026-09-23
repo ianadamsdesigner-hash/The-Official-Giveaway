@@ -65,7 +65,7 @@ const DEFAULTS = {
 
   /* draw behaviour */
   countdown: 3,         // seconds, 0 = off
-  tease: true,          // creep one extra name after it looks stopped
+  tease: false,         // creep one extra name after it looks stopped
   teaseMs: 900,
   excludePrev: true,    // drop previous winners on the next draw
   freezeWinner: false,  // lock the result against stray clicks
@@ -372,7 +372,7 @@ function paint(canvas, s) {
 
   /* Scrolling names — hidden entirely once the winner is locked in */
   if (!won) {
-    const offset = s.offset;
+    const offset = s.offset * slotH;
     const first = Math.floor(offset / slotH);
     const rem = offset - first * slotH;
     const baseFs = Math.max(20, Math.min(W * 0.055, 46)) * s.textScale;
@@ -675,7 +675,7 @@ function DrawScreen({ cfg, media, onAdmin }) {
 
       /* tick sound, rate-limited so fast scrolling doesn't machine-gun */
       if (s.soundOn && (s.phase === "cruise" || s.phase === "burst" || s.phase === "slow" || s.phase === "tease")) {
-        const row = Math.floor(s.offset / s.slotH);
+        const row = Math.floor(s.offset);
         if (row !== s.lastTickRow) {
           const jumped = Math.abs(row - s.lastTickRow);
           s.lastTickRow = row;
@@ -736,7 +736,10 @@ function DrawScreen({ cfg, media, onAdmin }) {
 
     s.entries = shuffle(pool);
     const n = s.entries.length;
-    const slotH = s.slotH || 100;
+    /* Motion is planned in SLOT units (1 = one name), not pixels. The painter
+       multiplies by the live slot height, so rounding, resizes or fullscreen
+       mid-draw can never drift the reel off the winner. */
+    const slotH = 1;
 
     const wIdx = Math.floor(Math.random() * n);
     const wName = s.entries[wIdx];
@@ -968,7 +971,7 @@ function DrawScreen({ cfg, media, onAdmin }) {
         }}
       />
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, width: "100%", flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
         {/* Header */}
         <div style={{ width: "100%", maxWidth: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "22px 0 12px", position: "relative" }}>
           <h1
@@ -1007,7 +1010,7 @@ function DrawScreen({ cfg, media, onAdmin }) {
         </div>
 
         {/* Tumbler */}
-        <div ref={wrapRef} style={{ width: "100%", maxWidth: 1100, position: "relative" }}>
+        <div ref={wrapRef} style={{ width: "100%", maxWidth: 1100, position: "relative", marginTop: "auto" }}>
           <canvas ref={canvasRef} style={{ display: "block", width: "100%" }} />
           {busy && (
             <div style={{
@@ -1032,7 +1035,7 @@ function DrawScreen({ cfg, media, onAdmin }) {
         </div>
 
         {/* Controls */}
-        <div style={{ marginTop: 16, width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ marginTop: 16, marginBottom: "auto", width: "100%", maxWidth: 1100, display: "flex", flexDirection: "column", gap: 10 }}>
           {!won && !busy && (
             <label className="gw-g" style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
